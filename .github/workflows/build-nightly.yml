@@ -12,6 +12,11 @@ jobs:
       uses: actions/checkout@v2
     - name: Prepare Env
       uses: microsoft/setup-msbuild@v1.1
+    - name: Package
+      run: |
+        Invoke-WebRequest https://nightly.link/Difegue/LANraragi/workflows/push-continous-delivery/dev/package.zip -O package.zip
+        & "C:\Program Files\7-Zip\7z.exe" x package.zip
+        & "C:\Program Files\7-Zip\7z.exe" a LANraragi/package.tar.gz package.tar
     - name: Build
       env:
         CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
@@ -22,7 +27,7 @@ jobs:
         [IO.File]::WriteAllBytes("./Cert.pfx.gpg", [Convert]::FromBase64String("${env:CERT_BASE64}"))
         & "C:\Program Files\Git\usr\bin\gpg.exe" --quiet --batch --yes --decrypt --passphrase="${env:CERT_GPG}" --output Cert.pfx Cert.pfx.gpg
         Invoke-Expression "./Util/Version.ps1 ${env:BUILD_NUMBER}"
-        MSBuild LANraragi\LANraragi.wapproj -nologo -r -v:minimal /p:Configuration=Release /p:UapAppxPackageBuildMode="SideloadOnly" /p:AppxPackageSigningEnabled=true /p:PackageCertificateThumbprint="" /p:PackageCertificateKeyFile="..\Cert.pfx" /p:PackageCertificatePassword="${env:CERT_PASSWORD}"
+        MSBuild LANraragi\LANraragi.wapproj -nologo -r -v:minimal /p:Configuration=Release /p:Platform=x64 /p:UapAppxPackageBuildMode="SideloadOnly" /p:AppxPackageSigningEnabled=true /p:PackageCertificateThumbprint="" /p:PackageCertificateKeyFile="..\Cert.pfx" /p:PackageCertificatePassword="${env:CERT_PASSWORD}"
         Remove-Item -Path "./Cert.pfx.gpg","./Cert.pfx"
     - name: Prepare for upload
       run: ./Util/PrepareForUpload.ps1
