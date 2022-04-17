@@ -1,0 +1,33 @@
+name: Nightly
+on: 
+  push:
+    branches:
+    - master
+jobs:
+  buildMSIX:
+    name: Build MSIX
+    runs-on: windows-2022
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Prepare Env
+      uses: microsoft/setup-msbuild@v1.1
+    - name: Build
+      env:
+        CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+        CERT_GPG: ${{ secrets.CERT_GPG }}
+        CERT_BASE64: ${{ secrets.CERT_BASE64 }}
+        BUILD_NUMBER: ${{ github.run_number }}
+      run: |
+        [IO.File]::WriteAllBytes("./Cert.pfx.gpg", [Convert]::FromBase64String("${env:CERT_BASE64}"))
+        & "C:\Program Files\Git\usr\bin\gpg.exe" --quiet --batch --yes --decrypt --passphrase="${env:CERT_GPG}" --output Cert.pfx Cert.pfx.gpg
+        Invoke-Expression "./Util/Version.ps1 ${env:BUILD_NUMBER}"
+        MSBuild LANraragi\LANraragi.wapproj -nologo -r -v:minimal /p:Configuration=Release /p:UapAppxPackageBuildMode="SideloadOnly" /p:AppxPackageSigningEnabled=true /p:PackageCertificateThumbprint="" /p:PackageCertificateKeyFile="..\Cert.pfx" /p:PackageCertificatePassword="${env:CERT_PASSWORD}"
+        Remove-Item -Path "./Cert.pfx.gpg","./Cert.pfx"
+    - name: Prepare for upload
+      run: ./Util/PrepareForUpload.ps1
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: LANraragi
+        path: LANraragi/AppPackages
