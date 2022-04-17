@@ -31,8 +31,8 @@
         Executable="Karen\Karen.exe"
         EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="Karen"
-        Description="Karen"
+        DisplayName="LANraragi"
+        Description="LANraragi"
         BackgroundColor="transparent"
         Square150x150Logo="Images\Square150x150Logo.png"
         Square44x44Logo="Images\Square44x44Logo.png">
@@ -44,8 +44,8 @@
         Executable="Installer\Installer.exe"
         EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="LANraragi"
-        Description="LANraragi"
+        DisplayName="LANraragi Installer"
+        Description="LANraragi Installer"
         BackgroundColor="transparent"
         Square150x150Logo="Images\Square150x150Logo.png"
         Square44x44Logo="Images\Square44x44Logo.png">

@@ -4,6 +4,7 @@ using System.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
 using Karen.Interop;
 using Windows.ApplicationModel;
+using Windows.Storage;
 
 namespace Karen
 {
@@ -42,17 +43,21 @@ namespace Karen
             if (exists)
             {
                 MessageBox.Show("Another instance of the application is already running.");
-                Shutdown();
+                Application.Current.Shutdown();
             }
 
             Distro = new WslDistro();
 
-            if (!Distro.CheckDistro())
+            bool needsUpgrade = Version.TryParse(Settings.Values["Version"]?.ToString() ?? "", out var oldVersion) && oldVersion < GetVersion();
+            if (!Distro.CheckDistro() || needsUpgrade)
 			{
+                Settings.Values["Karen"] = true;
                 Package.Current.GetAppListEntries().First(app => app.AppInfo.Id == "Installer").LaunchAsync().GetAwaiter().GetResult();
-                Shutdown();
+                Application.Current.Shutdown();
                 return;
 			}
+
+            Karen.Properties.Settings.Default.Upgrade();
 
             // First time ?
             if (Karen.Properties.Settings.Default.FirstLaunch)
@@ -86,5 +91,13 @@ namespace Karen
                 base.OnExit(e);
             }
         }
+
+        private static Version GetVersion()
+        {
+            var version = Package.Current.Id.Version;
+            return new Version(version.Major, version.Minor, version.Build, version.Revision);
+        }
+
+        private static ApplicationDataContainer Settings = ApplicationData.Current.LocalSettings;
     }
 }
