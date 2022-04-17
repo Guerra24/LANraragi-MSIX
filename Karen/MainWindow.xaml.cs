@@ -1,5 +1,4 @@
-﻿using Microsoft.Win32;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Navigation;
@@ -10,6 +9,9 @@ using Karen.Interop;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Shell;
+using Windows.ApplicationModel;
+using MessageBox = System.Windows.MessageBox;
+using System.Threading.Tasks;
 
 namespace Karen
 {
@@ -52,30 +54,45 @@ namespace Karen
             // Set first launch to false
             Properties.Settings.Default.FirstLaunch = false;
 
-            Properties.Settings.Default.Save();
-
-            //Update registry according to the StartWithWindows pref
             if (Properties.Settings.Default.StartWithWindows)
-                AddApplicationToStartup();
+            {
+                if (!AddApplicationToStartup() && Properties.Settings.Default.StartWithWindows)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+            }
             else
                 RemoveApplicationFromStartup();
 
+            Properties.Settings.Default.Save();
         }
 
-        public static void AddApplicationToStartup()
+        public static bool AddApplicationToStartup()
         {
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true))
+            var startupTask = StartupTask.GetAsync("Karen").GetAwaiter().GetResult();
+            switch (startupTask.State)
             {
-                key.SetValue("Karen", "\"" + System.Reflection.Assembly.GetExecutingAssembly().Location + "\"");
+                case StartupTaskState.Disabled:
+                    return startupTask.RequestEnableAsync().GetAwaiter().GetResult() == StartupTaskState.Enabled;
+                case StartupTaskState.DisabledByUser:
+                    MessageBox.Show("Auto startup disabled in Task Manager");
+                    return false;
+                case StartupTaskState.Enabled:
+                    return true;
+                case StartupTaskState.DisabledByPolicy:
+                    MessageBox.Show("Auto startup disabled by policy");
+                    return false;
+                case StartupTaskState.EnabledByPolicy:
+                    return true;
             }
+            return false;
         }
 
         public static void RemoveApplicationFromStartup()
         {
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true))
-            {
-                key.DeleteValue("Karen", false);
-            }
+            var startupTask = StartupTask.GetAsync("Karen").GetAwaiter().GetResult();
+            startupTask.Disable();
         }
 
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
@@ -99,7 +116,7 @@ namespace Karen
 
                 WCAUtils.UpdateStyleAttributes((HwndSource)sender);
                 ModernWpf.ThemeManager.Current.ActualApplicationThemeChanged += (s, ev) => WCAUtils.UpdateStyleAttributes((HwndSource)sender);
-            } 
+            }
             else
             {
                 WindowChrome.SetWindowChrome(this, null);

@@ -25,7 +25,7 @@ namespace Karen
         {
             var mainWindow = Application.Current.MainWindow;
 
-            if (mainWindow == null || mainWindow.GetType() != typeof(MainWindow) )
+            if (mainWindow == null || mainWindow.GetType() != typeof(MainWindow))
                 mainWindow = new MainWindow();
 
             mainWindow.Show();
@@ -50,12 +50,12 @@ namespace Karen
 
             bool needsUpgrade = Version.TryParse(Settings.Values["Version"]?.ToString() ?? "", out var oldVersion) && oldVersion < GetVersion();
             if (!Distro.CheckDistro() || needsUpgrade)
-			{
+            {
                 Settings.Values["Karen"] = true;
                 Package.Current.GetAppListEntries().First(app => app.AppInfo.Id == "Installer").LaunchAsync().GetAwaiter().GetResult();
                 Application.Current.Shutdown();
                 return;
-			}
+            }
 
             Karen.Properties.Settings.Default.Upgrade();
 
@@ -85,7 +85,8 @@ namespace Karen
             try
             {
                 Distro.StopApp();
-            } finally
+            }
+            finally
             {
                 WslDistro.FreeConsole(); //clean up the console to ensure it's closed alongside the app
                 base.OnExit(e);
