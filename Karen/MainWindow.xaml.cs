@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel;
 using System.Windows;
-using System.Windows.Forms;
 using System.Windows.Navigation;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
@@ -11,7 +10,7 @@ using System.Windows.Media;
 using System.Windows.Shell;
 using Windows.ApplicationModel;
 using MessageBox = System.Windows.MessageBox;
-using System.Threading.Tasks;
+using Windows.Storage.Pickers;
 
 namespace Karen
 {
@@ -29,43 +28,43 @@ namespace Karen
 
         private void PickFolder(object sender, RoutedEventArgs e)
         {
-            FolderBrowserDialog dlg = new FolderBrowserDialog();
-            dlg.Description = "Select your LANraragi Content Folder.";
+            var picker = new FolderPicker();
+            ((IInitializeWithWindow)(object)picker).Initialize(new WindowInteropHelper(this).Handle);
+            picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
 
-            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                Properties.Settings.Default.ContentFolder = dlg.SelectedPath;
-            }
+            var folder = picker.PickSingleFolderAsync().GetAwaiter().GetResult();
+
+            if (folder != null)
+                Settings.Default.ContentFolder = folder.Path;
         }
 
         private void PickThumbFolder(object sender, RoutedEventArgs e)
         {
-            FolderBrowserDialog dlg = new FolderBrowserDialog();
-            dlg.Description = "Select your LANraragi Thumbnail Folder.";
 
-            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                Properties.Settings.Default.ThumbnailFolder = dlg.SelectedPath;
-            }
+            var picker = new FolderPicker();
+            ((IInitializeWithWindow)(object)picker).Initialize(new WindowInteropHelper(this).Handle);
+            picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
+
+            var folder = picker.PickSingleFolderAsync().GetAwaiter().GetResult();
+
+            if (folder != null)
+                Settings.Default.ThumbnailFolder = folder.Path;
         }
 
         private void OnClosing(object sender, CancelEventArgs e)
         {
             // Set first launch to false
-            Properties.Settings.Default.FirstLaunch = false;
+            Settings.Default.FirstLaunch = false;
 
-            if (Properties.Settings.Default.StartWithWindows)
+            if (Settings.Default.StartWithWindows)
             {
-                if (!AddApplicationToStartup() && Properties.Settings.Default.StartWithWindows)
+                if (!AddApplicationToStartup())
                 {
                     e.Cancel = true;
-                    return;
                 }
             }
             else
                 RemoveApplicationFromStartup();
-
-            Properties.Settings.Default.Save();
         }
 
         public static bool AddApplicationToStartup()

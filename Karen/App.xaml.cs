@@ -4,7 +4,6 @@ using System.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
 using Karen.Interop;
 using Windows.ApplicationModel;
-using Windows.Storage;
 
 namespace Karen
 {
@@ -48,19 +47,17 @@ namespace Karen
 
             Distro = new WslDistro();
 
-            bool needsUpgrade = Version.TryParse(Settings.Values["Version"]?.ToString() ?? "", out var oldVersion) && oldVersion < GetVersion();
+            bool needsUpgrade = Version.TryParse(Settings.Default.Version, out var oldVersion) && oldVersion < GetVersion();
             if (!Distro.CheckDistro() || needsUpgrade)
             {
-                Settings.Values["Karen"] = true;
+                Settings.Default.Karen = true;
                 Package.Current.GetAppListEntries().First(app => app.AppInfo.Id == "Installer").LaunchAsync().GetAwaiter().GetResult();
                 Application.Current.Shutdown();
                 return;
             }
 
-            Karen.Properties.Settings.Default.Upgrade();
-
             // First time ?
-            if (Karen.Properties.Settings.Default.FirstLaunch)
+            if (Settings.Default.FirstLaunch)
             {
                 MessageBox.Show("Looks like this is your first time running the app! Please setup your Content Folder in the Settings.");
                 ShowConfigWindow();
@@ -70,7 +67,7 @@ namespace Karen
             notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
 
             // Check if server starts with app 
-            if (Karen.Properties.Settings.Default.StartServerAutomatically && Distro.Status == AppStatus.Stopped)
+            if (Settings.Default.StartServerAutomatically && Distro.Status == AppStatus.Stopped)
             {
                 ToastNotification("LANraragi is starting automagically...");
                 Distro.StartApp();
@@ -81,7 +78,8 @@ namespace Karen
 
         protected override void OnExit(ExitEventArgs e)
         {
-            notifyIcon.Dispose(); //the icon would clean up automatically, but this is cleaner
+            if (notifyIcon != null)
+                notifyIcon.Dispose(); //the icon would clean up automatically, but this is cleaner
             try
             {
                 Distro.StopApp();
@@ -98,7 +96,5 @@ namespace Karen
             var version = Package.Current.Id.Version;
             return new Version(version.Major, version.Minor, version.Build, version.Revision);
         }
-
-        private static ApplicationDataContainer Settings = ApplicationData.Current.LocalSettings;
     }
 }
