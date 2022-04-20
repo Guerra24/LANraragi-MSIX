@@ -1,5 +1,9 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Xml.Linq;
 using Windows.Storage;
 
 namespace Karen
@@ -32,7 +36,7 @@ namespace Karen
             set
             {
                 StoreObjectLocal(value);
-                PropertyChanged(this, new PropertyChangedEventArgs("ContentFolder"));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ContentFolder"));
             }
         }
         public string ThumbnailFolder
@@ -41,7 +45,7 @@ namespace Karen
             set
             {
                 StoreObjectLocal(value);
-                PropertyChanged(this, new PropertyChangedEventArgs("ThumbnailFolder"));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ThumbnailFolder"));
             }
         }
         public bool StartServerAutomatically
@@ -85,5 +89,58 @@ namespace Karen
             set => StoreObjectLocal(value);
         }
 
+        public void Migrate()
+        {
+            var searchRoot = new DirectoryInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Karen"));
+
+            if (!searchRoot.Exists)
+                return;
+
+            var files = searchRoot.GetFiles("user.config", SearchOption.AllDirectories).OrderByDescending(f => f.LastWriteTime);
+            if (files.Count() == 0)
+                return;
+
+            var file = files.FirstOrDefault();
+            if (file == null)
+                return;
+
+            var configXml = XDocument.Load(file.FullName);
+
+            Default.FirstLaunch = false;
+
+            foreach (var element in configXml.Element("configuration").Element("userSettings").Element("Karen.Properties.Settings").Elements("setting"))
+            {
+                var name = element.Attribute("name").Value;
+                var value = element.Value;
+                switch (name)
+                {
+                    case "ContentFolder":
+                        Default.ContentFolder = value;
+                        break;
+                    case "StartServerAutomatically":
+                        Default.StartServerAutomatically = bool.Parse(value);
+                        break;
+                    case "StartWithWindows":
+                        Default.StartWithWindows = bool.Parse(value);
+                        break;
+                    case "NetworkPort":
+                        Default.NetworkPort = value;
+                        break;
+                    case "ForceDebugMode":
+                        Default.ForceDebugMode = bool.Parse(value);
+                        break;
+                    case "UseWSL2":
+                        Default.UseWSL2 = bool.Parse(value);
+                        break;
+                    case "ThumbnailFolder":
+                        Default.ThumbnailFolder = value;
+                        break;
+                }
+            }
+            foreach (var f in files)
+                f.Delete();
+        }
+
     }
+
 }

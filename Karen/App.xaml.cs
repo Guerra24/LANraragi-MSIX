@@ -45,13 +45,16 @@ namespace Karen
                 Application.Current.Shutdown();
             }
 
+            Settings.Default.Migrate();
+
             Distro = new WslDistro();
 
             bool needsUpgrade = Version.TryParse(Settings.Default.Version, out var oldVersion) && oldVersion < GetVersion();
             if (!Distro.CheckDistro() || needsUpgrade)
             {
                 Settings.Default.Karen = true;
-                Package.Current.GetAppListEntries().First(app => app.AppInfo.Id == "Installer").LaunchAsync().GetAwaiter().GetResult();
+                Package.Current.GetAppListEntriesAsync().GetAwaiter().GetResult()
+                    .First(app => app.AppUserModelId == Package.Current.Id.FamilyName + "!Installer").LaunchAsync().GetAwaiter().GetResult();
                 Application.Current.Shutdown();
                 return;
             }

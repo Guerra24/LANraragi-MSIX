@@ -30,6 +30,7 @@ namespace Karen
         {
             var picker = new FolderPicker();
             ((IInitializeWithWindow)(object)picker).Initialize(new WindowInteropHelper(this).Handle);
+            picker.FileTypeFilter.Add("*");
             picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
 
             var folder = picker.PickSingleFolderAsync().GetAwaiter().GetResult();
@@ -43,6 +44,7 @@ namespace Karen
 
             var picker = new FolderPicker();
             ((IInitializeWithWindow)(object)picker).Initialize(new WindowInteropHelper(this).Handle);
+            picker.FileTypeFilter.Add("*");
             picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
 
             var folder = picker.PickSingleFolderAsync().GetAwaiter().GetResult();
