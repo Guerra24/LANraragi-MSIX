@@ -4,6 +4,7 @@ using System.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
 using Karen.Interop;
 using Windows.ApplicationModel;
+using Windows.UI.Popups;
 
 namespace Karen
 {
@@ -41,7 +42,7 @@ namespace Karen
             var exists = System.Diagnostics.Process.GetProcessesByName(System.IO.Path.GetFileNameWithoutExtension(System.Reflection.Assembly.GetEntryAssembly().Location)).Count() > 1;
             if (exists)
             {
-                MessageBox.Show("Another instance of the application is already running.");
+                ShowMessageDialog("Another instance of the application is already running.", "Close");
                 Application.Current.Shutdown();
             }
 
@@ -62,7 +63,7 @@ namespace Karen
             // First time ?
             if (Settings.Default.FirstLaunch)
             {
-                MessageBox.Show("Looks like this is your first time running the app! Please setup your Content Folder in the Settings.");
+                ShowMessageDialog("Looks like this is your first time running the app! Please setup your Content Folder in the Settings.", "Ok");
                 ShowConfigWindow();
             }
 
@@ -98,6 +99,16 @@ namespace Karen
         {
             var version = Package.Current.Id.Version;
             return new Version(version.Major, version.Minor, version.Build, version.Revision);
+        }
+
+        public static void ShowMessageDialog(string content, string button, IntPtr window = new IntPtr())
+        {
+            var msg = new MessageDialog(content, "LANraragi");
+            msg.Commands.Add(new UICommand(button));
+            if (window == IntPtr.Zero)
+                window = User32.GetDesktopWindow();
+            ((IInitializeWithWindow)(object)msg).Initialize(window);
+            msg.ShowAsync().GetAwaiter().GetResult();
         }
     }
 }

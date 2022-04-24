@@ -5,6 +5,11 @@ using System.Text;
 
 namespace LANraragi.Installer
 {
+    public static class Win32
+    {
+        [DllImport("shlwapi.dll", CharSet = CharSet.Unicode, SetLastError = false)]
+        public static extern bool PathFindOnPath([In, Out] StringBuilder pszFile, [In] string[] ppszOtherDirs);
+    }
 
     [Flags]
     public enum WSL_DISTRIBUTION_FLAGS : uint

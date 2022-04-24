@@ -9,7 +9,6 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Shell;
 using Windows.ApplicationModel;
-using MessageBox = System.Windows.MessageBox;
 using Windows.Storage.Pickers;
 
 namespace Karen
@@ -20,16 +19,21 @@ namespace Karen
     public partial class MainWindow : Window
     {
 
+        private IntPtr Handle;
+
         public MainWindow()
         {
             InitializeComponent();
             DataContext = this;
+            var helper = new WindowInteropHelper(this);
+            helper.EnsureHandle();
+            Handle = helper.Handle;
         }
 
         private void PickFolder(object sender, RoutedEventArgs e)
         {
             var picker = new FolderPicker();
-            ((IInitializeWithWindow)(object)picker).Initialize(new WindowInteropHelper(this).Handle);
+            ((IInitializeWithWindow)(object)picker).Initialize(Handle);
             picker.FileTypeFilter.Add("*");
             picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
 
@@ -43,7 +47,7 @@ namespace Karen
         {
 
             var picker = new FolderPicker();
-            ((IInitializeWithWindow)(object)picker).Initialize(new WindowInteropHelper(this).Handle);
+            ((IInitializeWithWindow)(object)picker).Initialize(Handle);
             picker.FileTypeFilter.Add("*");
             picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
 
@@ -69,7 +73,7 @@ namespace Karen
                 RemoveApplicationFromStartup();
         }
 
-        public static bool AddApplicationToStartup()
+        public bool AddApplicationToStartup()
         {
             var startupTask = StartupTask.GetAsync("Karen").GetAwaiter().GetResult();
             switch (startupTask.State)
@@ -77,12 +81,12 @@ namespace Karen
                 case StartupTaskState.Disabled:
                     return startupTask.RequestEnableAsync().GetAwaiter().GetResult() == StartupTaskState.Enabled;
                 case StartupTaskState.DisabledByUser:
-                    MessageBox.Show("Auto startup disabled in Task Manager");
+                    App.ShowMessageDialog("Auto startup disabled in Task Manager", "Close", Handle);
                     return false;
                 case StartupTaskState.Enabled:
                     return true;
                 case StartupTaskState.DisabledByPolicy:
-                    MessageBox.Show("Auto startup disabled by policy");
+                    App.ShowMessageDialog("Auto startup disabled by policy", "Close", Handle);
                     return false;
                 case StartupTaskState.EnabledByPolicy:
                     return true;
@@ -90,7 +94,7 @@ namespace Karen
             return false;
         }
 
-        public static void RemoveApplicationFromStartup()
+        public void RemoveApplicationFromStartup()
         {
             var startupTask = StartupTask.GetAsync("Karen").GetAwaiter().GetResult();
             startupTask.Disable();
